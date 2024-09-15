@@ -29,6 +29,8 @@ export class RecordFactory {
     this.validateData(data);
 
     const record = data.Records[0];
+
+    // Creating child objects
     const action = new Action(
       record.ses.receipt.action.type,
       record.ses.receipt.action.topicArn
@@ -70,6 +72,7 @@ export class RecordFactory {
 
     const ses = new Ses(receipt, mail);
 
+    // Returning the full object
     return new Record(
       record.eventVersion,
       ses,

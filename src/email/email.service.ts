@@ -9,8 +9,7 @@ import { EmailProcessedDTO } from './dto/email-processed.dto';
 export class EmailService {
   constructor() { }
   async processEmail(json: any) {
-    const jsonRecord = json.Records[0];
-    const classRecord: Record = RecordFactory.createFromJson(jsonRecord);
+    const classRecord: Record = RecordFactory.createFromJson(json);
     const processedEmail = plainToClass(EmailProcessedDTO, classRecord, { excludeExtraneousValues: true });
     return processedEmail;
   }

@@ -1,3 +1,4 @@
+import { HttpException, HttpStatus } from '@nestjs/common'; // Adjust the import based on your framework
 import { Record } from '../models/record.model';
 import { Ses } from '../models/ses.model';
 import { Receipt } from '../models/receipt.model';
@@ -12,42 +13,57 @@ import { DamrsVerdict } from '../models/damrcVerdict.model';
 import { CommonHeaders } from '../models/commonHeader.model';
 
 export class RecordFactory {
+
+  static validateData(data: any): void {
+    if (!data.Records || data.Records.length === 0) {
+      throw new HttpException('Records array is missing or empty', HttpStatus.BAD_REQUEST);
+    }
+
+    const record = data.Records[0];
+    if (!record.ses || !record.ses.receipt || !record.ses.mail) {
+      throw new HttpException('Invalid data structure in record', HttpStatus.BAD_REQUEST);
+    }
+  }
+
   static createFromJson(data: any): Record {
+    this.validateData(data);
+
+    const record = data.Records[0];
     const action = new Action(
-      data.ses.receipt.action.type,
-      data.ses.receipt.action.topicArn
+      record.ses.receipt.action.type,
+      record.ses.receipt.action.topicArn
     );
 
     const receipt = new Receipt(
-      data.ses.receipt.timestamp,
-      data.ses.receipt.processingTimeMillis,
-      data.ses.receipt.recipients,
-      new SpamVerdict(data.ses.receipt.spamVerdict.status),
-      new VirusVerdict(data.ses.receipt.virusVerdict.status),
-      new SpfVerdict(data.ses.receipt.spfVerdict.status),
-      new DkimVerdict(data.ses.receipt.dkimVerdict.status),
-      new DamrsVerdict(data.ses.receipt.dmarcVerdict.status),
-      data.ses.receipt.dmarcPolicy,
+      record.ses.receipt.timestamp,
+      record.ses.receipt.processingTimeMillis,
+      record.ses.receipt.recipients,
+      new SpamVerdict(record.ses.receipt.spamVerdict.status),
+      new VirusVerdict(record.ses.receipt.virusVerdict.status),
+      new SpfVerdict(record.ses.receipt.spfVerdict.status),
+      new DkimVerdict(record.ses.receipt.dkimVerdict.status),
+      new DamrsVerdict(record.ses.receipt.dmarcVerdict.status),
+      record.ses.receipt.dmarcPolicy,
       action
     );
 
-    const headers = data.ses.mail.headers.map((header: any) => Header.fromObject(header));
+    const headers = record.ses.mail.headers.map((header: any) => Header.fromObject(header));
 
     const commonHeaders = new CommonHeaders(
-      data.ses.mail.commonHeaders.returnPath,
-      data.ses.mail.commonHeaders.from,
-      data.ses.mail.commonHeaders.date,
-      data.ses.mail.commonHeaders.to,
-      data.ses.mail.commonHeaders.messageId,
-      data.ses.mail.commonHeaders.subject
+      record.ses.mail.commonHeaders.returnPath,
+      record.ses.mail.commonHeaders.from,
+      record.ses.mail.commonHeaders.date,
+      record.ses.mail.commonHeaders.to,
+      record.ses.mail.commonHeaders.messageId,
+      record.ses.mail.commonHeaders.subject
     );
 
     const mail = new Mail(
-      data.ses.mail.timestamp,
-      data.ses.mail.source,
-      data.ses.mail.messageId,
-      data.ses.mail.destination,
-      data.ses.mail.headersTruncated,
+      record.ses.mail.timestamp,
+      record.ses.mail.source,
+      record.ses.mail.messageId,
+      record.ses.mail.destination,
+      record.ses.mail.headersTruncated,
       headers,
       commonHeaders
     );
@@ -55,13 +71,20 @@ export class RecordFactory {
     const ses = new Ses(receipt, mail);
 
     return new Record(
-      data.eventVersion,
+      record.eventVersion,
       ses,
-      data.eventSource
+      record.eventSource
     );
   }
 
   static createFromJsonArray(jsonArray: any[]): Record[] {
-    return jsonArray.map(recordData => this.createFromJson(recordData));
+    return jsonArray.map(recordData => {
+      try {
+        return this.createFromJson(recordData);
+      } catch (error) {
+        console.error('Error creating record from JSON:', error.message);
+        throw new HttpException('Error processing records', HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+    });
   }
 }

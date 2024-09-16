@@ -3,7 +3,6 @@ import { EmailService } from './email.service';
 import { CreateRecordDto } from './dto/process-email.dto';
 import { Response } from 'express';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
-import { Record } from './models/record.model';
 
 @ApiTags('Emails')
 @Controller('email')

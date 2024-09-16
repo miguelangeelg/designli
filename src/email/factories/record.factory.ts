@@ -79,15 +79,4 @@ export class RecordFactory {
       record.eventSource
     );
   }
-
-  static createFromJsonArray(jsonArray: any[]): Record[] {
-    return jsonArray.map(recordData => {
-      try {
-        return this.createFromJson(recordData);
-      } catch (error) {
-        console.error('Error creating record from JSON:', error.message);
-        throw new HttpException('Error processing records', HttpStatus.INTERNAL_SERVER_ERROR);
-      }
-    });
-  }
 }

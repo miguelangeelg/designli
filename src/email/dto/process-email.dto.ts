@@ -1,153 +1,155 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsObject, IsString } from 'class-validator';
+import { IsArray, IsEmail, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, ValidateNested, IsDateString, IsBoolean } from 'class-validator';
+import { Type } from 'class-transformer';
 
-class Verdict {
-  @ApiProperty({ description: 'The status of the verdict' })
+class ActionDto {
+  @IsString()
+  type: string;
+
+  @IsOptional()
+  @IsString()
+  topicArn?: string;
+
+  @IsOptional()
+  @IsString()
+  bucketName?: string;
+
+  @IsOptional()
+  @IsString()
+  objectKey?: string;
+}
+
+class VerdictDto {
   @IsString()
   status: string;
 }
 
-class Action {
-  @ApiProperty({ description: 'The type of the action' })
-  @IsString()
-  type: string;
-
-  @ApiProperty({ description: 'The ARN of the topic' })
-  @IsString()
-  topicArn: string;
-
-  @ApiProperty({ description: 'The bucket name' })
-  @IsString()
-  bucketName: string;
-
-  @ApiProperty({ description: 'The object key' })
-  @IsString()
-  objectKey: string;
-}
-
-class Receipt {
-  @ApiProperty({ description: 'Timestamp of the receipt' })
-  @IsString()
+class ReceiptDto {
+  @IsDateString()
+  @IsNotEmpty()
   timestamp: string;
 
-  @ApiProperty({ description: 'Processing time in milliseconds' })
+  @IsInt()
   processingTimeMillis: number;
 
-  @ApiProperty({ type: [String], description: 'List of recipients' })
   @IsArray()
-  @IsString({ each: true })
+  @IsEmail({}, { each: true })
   recipients: string[];
 
-  @ApiProperty({ type: Verdict, description: 'Spam verdict' })
-  spamVerdict: Verdict;
+  @ValidateNested()
+  @Type(() => VerdictDto)
+  spamVerdict: VerdictDto;
 
-  @ApiProperty({ type: Verdict, description: 'Virus verdict' })
-  virusVerdict: Verdict;
+  @ValidateNested()
+  @Type(() => VerdictDto)
+  virusVerdict: VerdictDto;
 
-  @ApiProperty({ type: Verdict, description: 'SPF verdict' })
-  spfVerdict: Verdict;
+  @ValidateNested()
+  @Type(() => VerdictDto)
+  spfVerdict: VerdictDto;
 
-  @ApiProperty({ type: Verdict, description: 'DKIM verdict' })
-  dkimVerdict: Verdict;
+  @ValidateNested()
+  @Type(() => VerdictDto)
+  dkimVerdict: VerdictDto;
 
-  @ApiProperty({ type: Verdict, description: 'DMARC verdict' })
-  dmarcVerdict: Verdict;
+  @ValidateNested()
+  @Type(() => VerdictDto)
+  dmarcVerdict: VerdictDto;
 
-  @ApiProperty({ description: 'DMARC policy' })
   @IsString()
   dmarcPolicy: string;
 
-  @ApiProperty({ type: Action, description: 'Action to be taken' })
-  action: Action;
+  @ValidateNested()
+  @Type(() => ActionDto)
+  action: ActionDto;
 }
 
-class CommonHeaders {
-  @ApiProperty({ description: 'Return path' })
-  @IsString()
+class CommonHeadersDto {
+  @IsEmail()
   returnPath: string;
 
-  @ApiProperty({ type: [String], description: 'From addresses' })
   @IsArray()
-  @IsString({ each: true })
+  @IsEmail({}, { each: true })
   from: string[];
 
-  @ApiProperty({ description: 'Date header' })
-  @IsString()
+  @IsDateString()
   date: string;
 
-  @ApiProperty({ type: [String], description: 'To addresses' })
   @IsArray()
-  @IsString({ each: true })
+  @IsEmail({}, { each: true })
   to: string[];
 
-  @ApiProperty({ description: 'Message ID' })
   @IsString()
   messageId: string;
 
-  @ApiProperty({ description: 'Subject header' })
   @IsString()
   subject: string;
 }
 
-class Header {
-  @ApiProperty({ description: 'Name of the header' })
+class MailDto {
+  @IsDateString()
+  @IsNotEmpty()
+  timestamp: string;
+
+  @IsEmail()
+  source: string;
+
+  @IsString()
+  messageId:string;
+
+  @IsArray()
+  @IsEmail({}, { each: true })
+  destination: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  headersTruncated?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => HeaderDto)
+  headers?: HeaderDto[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CommonHeadersDto)
+  commonHeaders?: CommonHeadersDto;
+}
+
+class HeaderDto {
   @IsString()
   name: string;
 
-  @ApiProperty({ description: 'Value of the header' })
   @IsString()
   value: string;
 }
 
-class Mail {
-  @ApiProperty({ description: 'Timestamp of the mail' })
-  @IsString()
-  timestamp: string;
+class SesDto {
+  @ValidateNested()
+  @Type(() => ReceiptDto)
+  receipt: ReceiptDto;
 
-  @ApiProperty({ description: 'Source of the mail' })
-  @IsString()
-  source: string;
-
-  @ApiProperty({ description: 'Message ID of the mail' })
-  @IsString()
-  messageId: string;
-
-  @ApiProperty({ type: [String], description: 'List of destination addresses' })
-  @IsArray()
-  @IsString({ each: true })
-  destination: string[];
-
-  @ApiProperty({ description: 'Headers truncated flag' })
-  headersTruncated: boolean;
-
-  @ApiProperty({ type: [Header], description: 'List of headers' })
-  @IsArray()
-  headers: Header[];
-
-  @ApiProperty({ type: CommonHeaders, description: 'Common headers of the mail' })
-  commonHeaders: CommonHeaders;
+  @ValidateNested()
+  @Type(() => MailDto)
+  mail: MailDto;
 }
 
 class RecordDto {
-  @ApiProperty({ description: 'Event version' })
   @IsString()
+  @IsNotEmpty()
   eventVersion: string;
 
-  @ApiProperty({ type: Receipt, description: 'Receipt information' })
-  ses: {
-    receipt: Receipt;
-    mail: Mail;
-  };
+  @ValidateNested()
+  @Type(() => SesDto)
+  ses: SesDto;
 
-  @ApiProperty({ description: 'Event source' })
   @IsString()
   eventSource: string;
 }
 
-export class CreateRecordDto {
-  @ApiProperty({ type: [RecordDto], description: 'List of records' })
+export class RecordsDto {
   @IsArray()
-  @IsObject({ each: true })
-  @IsNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => RecordDto)
   Records: RecordDto[];
 }

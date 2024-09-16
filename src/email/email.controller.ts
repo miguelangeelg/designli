@@ -1,8 +1,8 @@
 import { Controller, Post, Body, Res, HttpStatus } from '@nestjs/common';
 import { EmailService } from './email.service';
-import { CreateRecordDto } from './dto/process-email.dto';
 import { Response } from 'express';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
+import { RecordsDto } from './dto/process-email.dto';
 
 @ApiTags('Emails')
 @Controller('email')
@@ -12,7 +12,7 @@ export class EmailController {
   @Post('process')
   @ApiBody({
     description: 'Get JSON from post, conver it in a class and then evaluate it to return a final response',
-    type: CreateRecordDto,
+    type: RecordsDto,
     examples: {
       example1: {
         summary: 'Example payload',
@@ -133,7 +133,7 @@ export class EmailController {
       }
     }
   })
-  async process(@Body() createEmailDto: CreateRecordDto, @Res() res: Response) {
+  async process(@Body() createEmailDto: RecordsDto, @Res() res: Response) {
     try {
       const response = await this.emailService.processEmail(createEmailDto);
       res.status(HttpStatus.OK).json(response);
